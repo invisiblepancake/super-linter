@@ -284,6 +284,7 @@ You can configure Super-linter using the following environment variables:
 | **GITHUB_DOMAIN**                               | `github.com`                                                                 | Specify a custom GitHub domain in case GitHub Enterprise is used: e.g. `github.myenterprise.com`. `GITHUB_DOMAIN` is a convenience configuration variable to automatically build `GITHUB_CUSTOM_API_URL` and `GITHUB_CUSTOM_SERVER_URL`.                                                                                             |
 | **GITLEAKS_CONFIG_FILE**                        | `.gitleaks.toml`                                                             | Filename for [GitLeaks configuration](https://github.com/zricethezav/gitleaks#configuration) (ex: `.gitleaks.toml`)                                                                                                                                                                                                                  |
 | **GITLEAKS_LOG_LEVEL**                          | Gitleaks default log level                                                   | Gitleaks log level. Defaults to the Gitleaks default log level.                                                                                                                                                                                                                                                                      |
+| **GO_CONFIG_FILE**                              | `.golangci.yml`                                                              | Filename for [golangci-lint configuration](https://golangci-lint.run/usage/configuration/) (ex: `.golangci.toml`)                                                                                                                                                                                                                    |
 | **IGNORE_GENERATED_FILES**                      | `false`                                                                      | If set to `true`, super-linter will ignore all the files with `@generated` marker but without `@not-generated` marker. Jscpd and Checkov ignore this variable. Use their include and ignore features to select or ignore the files to lint.                                                                                          |
 | **IGNORE_GITIGNORED_FILES**                     | `false`                                                                      | If set to `true`, super-linter will ignore all the files that are ignored by Git. Checkov ignores this variable. Use its include and ignore features to select or ignore the files to lint.                                                                                                                                          |
 | **JAVA_FILE_NAME**                              | `sun_checks.xml`                                                             | Filename for [Checkstyle configuration](https://checkstyle.sourceforge.io/config.html). Checkstyle embeds several configuration files, such as `sun_checks.xml`, `google_checks.xml` that you can use without providing your own configuration file.                                                                                 |
@@ -614,6 +615,14 @@ For example, you can configure super-linter to load configuration files from the
 env:
   LINTER_RULES_PATH: config/lint
 ```
+
+In order to facilitate migrations from using standalone linters to super-linter,
+the following linters don't follow the convention described above in this
+section, but rather they use their own mechanism to discover and load
+configuration files. To configure these linters, see:
+
+- [Prettier](https://prettier.io/docs/en/configuration)
+- [Commitlint](https://commitlint.js.org/reference/configuration.html#config-via-file)
 
 Some of the linters that super-linter provides can be configured to disable
 certain rules or checks, and to ignore certain files or part of them.

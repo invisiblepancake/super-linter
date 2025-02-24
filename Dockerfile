@@ -8,38 +8,38 @@
 # Get dependency images as build stages #
 #########################################
 FROM tenable/terrascan:1.19.9 AS terrascan
-FROM alpine/terragrunt:1.9.8 AS terragrunt
+FROM alpine/terragrunt:1.10.3 AS terragrunt
 FROM dotenvlinter/dotenv-linter:3.3.0 AS dotenv-linter
-FROM ghcr.io/terraform-linters/tflint:v0.54.0 AS tflint
+FROM ghcr.io/terraform-linters/tflint:v0.55.1 AS tflint
 FROM ghcr.io/yannh/kubeconform:v0.6.7 AS kubeconfrm
-FROM alpine/helm:3.16.3 AS helm
-FROM golang:1.23.3-alpine AS golang
-FROM golangci/golangci-lint:v1.62.0 AS golangci-lint
-FROM goreleaser/goreleaser:v2.4.8 AS goreleaser
+FROM alpine/helm:3.17.1 AS helm
+FROM golang:1.24.0-alpine AS golang
+FROM golangci/golangci-lint:v1.64.5 AS golangci-lint
+FROM goreleaser/goreleaser:v2.7.0 AS goreleaser
 FROM hadolint/hadolint:v2.12.0-alpine AS dockerfile-lint
-FROM registry.k8s.io/kustomize/kustomize:v5.4.3 AS kustomize
-FROM hashicorp/terraform:1.9.8 AS terraform
+FROM registry.k8s.io/kustomize/kustomize:v5.6.0 AS kustomize
+FROM hashicorp/terraform:1.10.5 AS terraform
 FROM koalaman/shellcheck:v0.10.0 AS shellcheck
-FROM mstruebing/editorconfig-checker:v3.0.3 AS editorconfig-checker
+FROM mstruebing/editorconfig-checker:v3.2.0 AS editorconfig-checker
 FROM mvdan/shfmt:v3.10.0 AS shfmt
-FROM rhysd/actionlint:1.7.4 AS actionlint
+FROM rhysd/actionlint:1.7.7 AS actionlint
 FROM scalameta/scalafmt:v3.8.3 AS scalafmt
-FROM zricethezav/gitleaks:v8.21.2 AS gitleaks
-FROM yoheimuta/protolint:0.50.5 AS protolint
-FROM ghcr.io/clj-kondo/clj-kondo:2024.11.14-alpine AS clj-kondo
-FROM dart:3.5.4-sdk AS dart
-FROM mcr.microsoft.com/dotnet/sdk:9.0.100-alpine3.20 AS dotnet-sdk
-FROM mcr.microsoft.com/powershell:7.4-alpine-3.20 AS powershell
-FROM composer/composer:2.8.3 AS php-composer
+FROM zricethezav/gitleaks:v8.24.0 AS gitleaks
+FROM yoheimuta/protolint:0.53.0 AS protolint
+FROM ghcr.io/clj-kondo/clj-kondo:2025.02.20-alpine AS clj-kondo
+FROM dart:3.7.0-sdk AS dart
+FROM mcr.microsoft.com/dotnet/sdk:9.0.102-alpine3.21 AS dotnet-sdk
+FROM mcr.microsoft.com/powershell:7.5-alpine-3.20 AS powershell
+FROM composer/composer:2.8.5 AS php-composer
 
-FROM python:3.12.7-alpine3.20 AS clang-format
+FROM python:3.13.2-alpine3.21 AS clang-format
 
 RUN apk add --no-cache \
   build-base \
-  clang17 \
+  clang19 \
   cmake \
   git \
-  llvm17-dev \
+  llvm19-dev \
   ninja-is-really-ninja
 
 WORKDIR /tmp
@@ -59,10 +59,12 @@ RUN cmake \
   && ninja clang-format \
   && mv /tmp/llvm-project/llvm/build/bin/clang-format /usr/bin
 
-FROM python:3.12.7-alpine3.20 AS python-builder
+FROM python:3.13.2-alpine3.21 AS python-builder
 
 RUN apk add --no-cache \
-  bash
+  bash \
+  cargo \
+  rust
 
 SHELL ["/bin/bash", "-o", "errexit", "-o", "nounset", "-o", "pipefail", "-c"]
 
@@ -70,7 +72,7 @@ COPY dependencies/python/ /stage
 WORKDIR /stage
 RUN ./build-venvs.sh && rm -rfv /stage
 
-FROM python:3.12.7-alpine3.20 AS npm-builder
+FROM python:3.13.2-alpine3.21 AS npm-builder
 
 RUN apk add --no-cache \
   bash \
@@ -101,7 +103,7 @@ COPY TEMPLATES/.tflint.hcl /action/lib/.automation/
 # Initialize TFLint plugins so we get plugin versions listed when we ask for TFLint version
 RUN --mount=type=secret,id=GITHUB_TOKEN GITHUB_TOKEN=$(cat /run/secrets/GITHUB_TOKEN) tflint --init -c /action/lib/.automation/.tflint.hcl
 
-FROM python:3.12.7-alpine3.20 AS lintr-installer
+FROM python:3.13.2-alpine3.21 AS lintr-installer
 
 RUN apk add --no-cache \
   bash \
@@ -125,7 +127,7 @@ COPY dependencies/composer/composer.json dependencies/composer/composer.lock /ap
 RUN composer update \
   && composer audit
 
-FROM python:3.12.7-alpine3.20 AS base_image
+FROM python:3.13.2-alpine3.21 AS base_image
 
 LABEL com.github.actions.name="Super-Linter" \
   com.github.actions.description="Super-linter is a ready-to-run collection of linters and code analyzers, to help validate your source code." \
@@ -166,19 +168,19 @@ RUN apk add --no-cache \
   openssh-client \
   parallel \
   perl \
-  php83 \
-  php83-ctype \
-  php83-curl \
-  php83-dom \
-  php83-iconv \
-  php83-pecl-igbinary \
-  php83-intl \
-  php83-mbstring \
-  php83-openssl \
-  php83-phar \
-  php83-simplexml \
-  php83-tokenizer \
-  php83-xmlwriter \
+  php84 \
+  php84-ctype \
+  php84-curl \
+  php84-dom \
+  php84-iconv \
+  php84-pecl-igbinary \
+  php84-intl \
+  php84-mbstring \
+  php84-openssl \
+  php84-phar \
+  php84-simplexml \
+  php84-tokenizer \
+  php84-xmlwriter \
   R \
   rakudo \
   ruby \
@@ -441,6 +443,8 @@ ENV HOME="/github/home"
 RUN mkdir -p "${HOME}"
 
 ENTRYPOINT ["/action/lib/linter.sh"]
+
+RUN if [ ! -e "/usr/bin/php" ]; then ln -s /usr/bin/php84 /usr/bin/php; fi
 
 FROM base_image AS slim
 
